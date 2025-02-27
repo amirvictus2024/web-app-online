@@ -1,131 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WireGuard & DNS Generator v1.0.0</title>
-    <!-- Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-    <script src="https://fastly.jsdelivr.net/npm/disable-devtool/disable-devtool.min.js" disable-devtool-auto disable-menu="true" url="https://cia.gov"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WireGuard & DNS Generator v1.0.0</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
 </head>
+<body class="bg-gray-100">
+  <!-- Header -->
+  <header class="app-header bg-dark text-white d-flex justify-content-between align-items-center p-3">
+    <div class="title fs-4">WireGuard & DNS Generator</div>
+    <button id="toggleTheme" class="btn btn-light">
+      <span class="material-icons">dark_mode</span>
+    </button>
+  </header>
 
-<body>
-    <!-- هدر بالا -->
-    <header class="app-header">
-        <div class="title">WireGuard & DNS Generator</div>
-        <button id="toggleTheme"><span class="material-icons">dark_mode</span></button>
-    </header>
+  <!-- Tabs -->
+  <div class="tabs container my-4">
+    <ul class="nav nav-tabs">
+      <li class="nav-item">
+        <button class="nav-link active" data-bs-target="#dnsSection" data-bs-toggle="tab">DNS Generator</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" data-bs-target="#wireguardSection" data-bs-toggle="tab">WireGuard Config</button>
+      </li>
+    </ul>
+  </div>
 
-    <!-- نوار تب -->
-    <div class="tabs">
-        <button class="tab-btn active" data-target="dnsSection">DNS Generator</button>
-        <button class="tab-btn" data-target="wireguardSection">WireGuard Config</button>
-    </div>
-
-    <div class="container">
-        <!-- بخش DNS (بالا) -->
-        <div id="dnsSection" class="section active">
-            <!-- پیام هشدار -->
-            <div id="dnsWarning" class="warning" style="display:none;"></div>
-            <h2>DNS Generator</h2>
-            <div class="form-group">
-                <label for="dnsLocation">Select Location</label>
-                <select id="dnsLocation">
-                    <option value="">Choose a location</option>
-                    <option value="germany">Germany</option>
-                    <option value="tr">Turkey</option>
-                    <option value="uae">UAE</option>
-                    <option value="usa">USA</option>
-                    <option value="russia">Russia</option>
-                </select>
-            </div>
-            <div class="output-container" id="dnsConfigContainer">
-                <label>DNS Addresses</label>
-                <div class="button-group" style="display:flex; gap:0.5rem; margin-top:0.5rem;">
-                    <button id="generateNewDns" class="generate-btn">
-                        <span class="material-icons">autorenew</span>Generate New DNS
-                    </button>
-                    <button class="btn" id="copyDnsBtn"><span class="material-icons">content_copy</span>Copy</button>
-                    <button class="btn" id="downloadDnsBtn"><span
-                            class="material-icons">download</span>Download</button>
-                </div>
-                <pre id="dnsConfigOutput"></pre>
-            </div>
+  <!-- Main Content -->
+  <div class="container">
+    <div class="tab-content">
+      <!-- DNS Generator Section -->
+      <div id="dnsSection" class="tab-pane fade show active">
+        <div id="dnsWarning" class="alert alert-warning d-none"></div>
+        <h2 class="mb-3">DNS Generator</h2>
+        <div class="mb-3">
+          <label for="dnsLocation" class="form-label">Select Location</label>
+          <select id="dnsLocation" class="form-select">
+            <option value="">Choose a location</option>
+            <option value="germany">Germany</option>
+            <option value="tr">Turkey</option>
+            <option value="uae">UAE</option>
+            <option value="usa">USA</option>
+            <option value="russia">Russia</option>
+          </select>
         </div>
-
-        <!-- بخش WireGuard (پایین) -->
-        <div id="wireguardSection" class="section">
-            <!-- پیام هشدار -->
-            <div id="wgWarning" class="warning" style="display:none;"></div>
-            <h2>WireGuard Configuration</h2>
-            <div class="form-group">
-                <label for="configName">Configuration Name</label>
-                <div class="name-group" style="display:flex; gap:0.5rem;">
-                    <input type="text" id="configName" placeholder="Enter a name for this configuration" />
-                    <button id="generateNameBtn" class="btn">
-                        <span class="material-icons">autorenew</span>Generate Random Name
-                    </button>
-                </div>
-                <button id="generateNewConfig" class="generate-btn">
-                    <span class="material-icons">autorenew</span>Generate New Configuration
-                </button>
-            </div>
-            <!-- در حالت IPv4، لوکیشن انتخاب می‌شود؛ در حالت IPv6، در صورت موجود بودن برای تولید آدرس‌های IPv4 استفاده می‌شود -->
-            <div class="form-group">
-                <label for="location">Select Location (for IPv4 addresses)</label>
-                <select id="location">
-                    <option value="">Choose a location</option>
-                    <option value="germany">Germany</option>
-                    <option value="tr">Turkey</option>
-                    <option value="uae">UAE</option>
-                    <option value="usa">USA</option>
-                    <option value="russia">Russia</option>
-                </select>
-            </div>
-            <!-- انتخاب نسخه endpoint -->
-            <div class="form-group">
-                <label>Select Endpoint IP Version</label>
-                <div class="ip-version-container">
-                    <label>
-                        <input type="radio" name="ipVersion" value="ipv4" checked> IPv4
-                    </label>
-                    <label>
-                        <input type="radio" name="ipVersion" value="ipv6"> IPv6
-                    </label>
-                </div>
-            </div>
-            <!-- تنظیمات مربوط به IPv6 -->
-            <div class="form-group" id="ipv6ModeContainer" style="display:none;">
-                <label for="ipv6ModeSelect">Select IPv6 Endpoint Mode</label>
-                <select id="ipv6ModeSelect">
-                    <option value="basic">Basic</option>
-                    <option value="normal">Normal (8-group full)</option>
-                    <option value="pro">Pro (Special Format)</option>
-                </select>
-            </div>
-            <div class="output-container" id="wgConfigContainer">
-                <label>WireGuard Configuration</label>
-                <div class="button-group"
-                    style="position:absolute; top:0.5rem; right:0.5rem; display:flex; gap:0.5rem;">
-                    <button class="btn" id="copyWgBtn"><span class="material-icons">content_copy</span>Copy</button>
-                    <button class="btn" id="downloadWgBtn"><span class="material-icons">download</span>Download</button>
-                </div>
-                <pre id="wgConfigOutput"></pre>
-            </div>
+        <div id="dnsConfigContainer" class="mb-3 relative">
+          <label class="form-label">DNS Addresses</label>
+          <div class="d-flex gap-2 mb-2">
+            <button id="generateNewDns" class="btn btn-primary">
+              <span class="material-icons align-middle">autorenew</span> Generate New DNS
+            </button>
+            <button class="btn btn-secondary" id="copyDnsBtn">
+              <span class="material-icons align-middle">content_copy</span> Copy
+            </button>
+            <button class="btn btn-secondary" id="downloadDnsBtn">
+              <span class="material-icons align-middle">download</span> Download
+            </button>
+          </div>
+          <pre id="dnsConfigOutput" class="p-3 bg-light border rounded"></pre>
         </div>
-    </div>
+      </div>
 
-    <!-- فوتر با نسخه -->
-    <div class="footer">
-        <span>v1.0.0</span><br>
-        <span>made by Void1x0</span>
+      <!-- WireGuard Configuration Section -->
+      <div id="wireguardSection" class="tab-pane fade">
+        <div id="wgWarning" class="alert alert-warning d-none"></div>
+        <h2 class="mb-3">WireGuard Configuration</h2>
+        <div class="mb-3">
+          <label for="configName" class="form-label">Configuration Name</label>
+          <div class="d-flex gap-2">
+            <input type="text" id="configName" class="form-control" placeholder="Enter a name for this configuration" />
+            <button id="generateNameBtn" class="btn btn-secondary">
+              <span class="material-icons align-middle">autorenew</span> Generate Random Name
+            </button>
+          </div>
+        </div>
+        <div class="mb-3">
+          <button id="generateNewConfig" class="btn btn-primary">
+            <span class="material-icons align-middle">autorenew</span> Generate New Configuration
+          </button>
+        </div>
+        <div class="mb-3">
+          <label for="location" class="form-label">Select Location (for IPv4 addresses)</label>
+          <select id="location" class="form-select">
+            <option value="">Choose a location</option>
+            <option value="germany">Germany</option>
+            <option value="tr">Turkey</option>
+            <option value="uae">UAE</option>
+            <option value="usa">USA</option>
+            <option value="russia">Russia</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Select Endpoint IP Version</label>
+          <div class="d-flex gap-3">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="ipVersion" id="ipv4" value="ipv4" checked>
+              <label class="form-check-label" for="ipv4">IPv4</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="ipVersion" id="ipv6" value="ipv6">
+              <label class="form-check-label" for="ipv6">IPv6</label>
+            </div>
+          </div>
+        </div>
+        <div class="mb-3" id="ipv6ModeContainer" style="display:none;">
+          <label for="ipv6ModeSelect" class="form-label">Select IPv6 Endpoint Mode</label>
+          <select id="ipv6ModeSelect" class="form-select">
+            <option value="basic">Basic</option>
+            <option value="normal">Normal (8-group full)</option>
+            <option value="pro">Pro (Special Format)</option>
+          </select>
+        </div>
+        <div id="wgConfigContainer" class="mb-3 relative">
+          <label class="form-label">WireGuard Configuration</label>
+          <div class="position-absolute top-0 end-0 d-flex gap-2 mt-2 me-2">
+            <button class="btn btn-secondary" id="copyWgBtn">
+              <span class="material-icons align-middle">content_copy</span> Copy
+            </button>
+            <button class="btn btn-secondary" id="downloadWgBtn">
+              <span class="material-icons align-middle">download</span> Download
+            </button>
+          </div>
+          <pre id="wgConfigOutput" class="p-3 bg-light border rounded"></pre>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <!-- tweetnacl library for key generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tweetnacl/1.0.3/nacl.min.js"></script>
-    <script src="script.js"></script>
+  <!-- Footer -->
+  <footer class="footer text-center py-3 bg-dark text-white mt-4">
+    <span>v1.0.1</span><br>
+    <span>made by Void1x0</span>
+  </footer>
+
+  <!-- Bootstrap JS (for Tabs functionality) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- tweetnacl library for key generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tweetnacl/1.0.3/nacl.min.js"></script>
+  <script src="script.js"></script>
 </body>
-
 </html>
