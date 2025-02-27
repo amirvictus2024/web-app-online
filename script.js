@@ -111,16 +111,19 @@ const wgIPv6Ranges = [
     "2003:ee::/37"
 ];
 
-/* توابع کمکی */
+/* ---------- توابع کمکی ---------- */
+
+// تبدیل ArrayBuffer به Base64
 function arrayBufferToBase64(buffer) {
     let binary = '';
-    let bytes = new Uint8Array(buffer);
+    const bytes = new Uint8Array(buffer);
     for (let i = 0; i < bytes.byteLength; i++) {
         binary += String.fromCharCode(bytes[i]);
     }
     return btoa(binary);
 }
 
+// تولید جفت کلید با tweetnacl
 function generateKeyPair() {
     const keyPair = nacl.box.keyPair();
     return {
@@ -129,6 +132,7 @@ function generateKeyPair() {
     };
 }
 
+// تولید یک آدرس IPv4 تصادفی از CIDR
 function randomIPv4FromCIDR(cidr) {
     const [base, prefix] = cidr.split("/");
     const prefixNum = parseInt(prefix, 10);
@@ -146,7 +150,7 @@ function randomIPv4FromCIDR(cidr) {
     return `${a}.${b}.${c}.${d}`;
 }
 
-/* توابع کمکی برای کار با IPv6 و BigInt */
+// توابع مربوط به کار با IPv6
 
 // تبدیل آدرس IPv6 به BigInt (با گسترش نشانه "::")
 function ipv6ToBigInt(ip) {
@@ -189,30 +193,28 @@ function randomBigInt(bits) {
     return result;
 }
 
-// تولید یک آدرس IPv6 تصادفی که در محدوده CIDR داده‌شده قرار دارد
+// تولید یک آدرس IPv6 تصادفی در محدوده CIDR داده‌شده
 function randomIPv6FromCIDR(cidr) {
     const [ip, prefixLengthStr] = cidr.split("/");
     const prefixLength = parseInt(prefixLengthStr, 10);
     const ipBigInt = ipv6ToBigInt(ip);
     const hostBits = 128 - prefixLength;
-    // ماسک شبکه: بیت‌های بالاتر ثابت می‌شوند
     const mask = ((1n << 128n) - 1n) ^ ((1n << BigInt(hostBits)) - 1n);
     const network = ipBigInt & mask;
-    // تولید مقدار تصادفی برای بیت‌های میزبان
     const randomOffset = randomBigInt(hostBits);
     const randomIpBigInt = network + randomOffset;
     return bigIntToIPv6(randomIpBigInt);
 }
 
-// تولید DNS آدرس‌های IPv6 با استفاده از CIDR داده‌شده
+// تولید DNS آدرس‌های IPv6 با استفاده از CIDR
 function generateIPv6DNSAddresses(prefix) {
-    // اگر پیشوند شامل CIDR نباشد، پیش‌فرض /64 را اضافه می‌کنیم
     if (!prefix.includes("/")) {
         prefix = prefix + "/64";
     }
     return [randomIPv6FromCIDR(prefix), randomIPv6FromCIDR(prefix)];
 }
 
+// تولید DNS آدرس‌های IPv4 برای یک لوکیشن مشخص
 function generateIPv4DNSAddresses(locationData) {
     const filteredRanges = locationData.ipv4_ranges.filter(range => !range.includes("/10"));
     if (filteredRanges.length === 0) return ["", ""];
@@ -223,21 +225,23 @@ function generateIPv4DNSAddresses(locationData) {
     return [ip1, ip2];
 }
 
+// تولید پیکربندی DNS
 function generateDnsConfig(location) {
     const locationData = locations[location];
     const dnsIPv4Addresses = generateIPv4DNSAddresses(locationData);
     const dnsIPv6Addresses = generateIPv6DNSAddresses(locationData.ipv6_prefix);
     return `DNS Addresses for ${location.toUpperCase()}:
-
-IPv4 DNS:
-Primary DNS: ${dnsIPv4Addresses[0]}
-Secondary DNS: ${dnsIPv4Addresses[1]}
-
-IPv6 DNS:
-Primary DNS: ${dnsIPv6Addresses[0]}
-Secondary DNS: ${dnsIPv6Addresses[1]}`;
+  
+  IPv4 DNS:
+  Primary DNS: ${dnsIPv4Addresses[0]}
+  Secondary DNS: ${dnsIPv4Addresses[1]}
+  
+  IPv6 DNS:
+  Primary DNS: ${dnsIPv6Addresses[0]}
+  Secondary DNS: ${dnsIPv6Addresses[1]}`;
 }
 
+// دانلود فایل
 function downloadFile(content, filename) {
     const blob = new Blob([content], { type: "text/plain" });
     const url = window.URL.createObjectURL(blob);
@@ -250,7 +254,7 @@ function downloadFile(content, filename) {
     document.body.removeChild(a);
 }
 
-/* تابع نمایش پیام هشدار */
+// نمایش پیام هشدار به کمک کلاس‌ها
 function showWarning(id, message) {
     const warningElem = document.getElementById(id);
     warningElem.textContent = message;
@@ -260,9 +264,10 @@ function showWarning(id, message) {
     }, 3000);
 }
 
-/* تابع تولید پیکربندی WireGuard */
+/* ---------- تولید پیکربندی WireGuard ---------- */
 function generateWgConfig(location, configName) {
     const ipVersion = document.querySelector('input[name="ipVersion"]:checked').value;
+
     if (ipVersion === "ipv4") {
         if (!location) return "";
         const locationData = locations[location];
@@ -280,19 +285,19 @@ function generateWgConfig(location, configName) {
         const endpointAddress = ip1 + ":443";
 
         return `[Interface]
-PrivateKey = ${clientKeyPair.privateKey}
-Address = 10.202.10.10/32, ${ip1}/16, ${ip2}/32
-ListenPort = 51820
-DNS = 78.157.42.100, ${dnsIPv4[0]}, ${dnsIPv4[1]}
-MTU = 1400
-
-[Peer]
-PublicKey = ${serverKeyPair.publicKey}
-Endpoint = ${endpointAddress}
-AllowedIPs = 0.0.0.0/8, ::/8
-PersistentKeepalive = 20`;
+  PrivateKey = ${clientKeyPair.privateKey}
+  Address = 10.202.10.10/32, ${ip1}/16, ${ip2}/32
+  ListenPort = 51820
+  DNS = 78.157.42.100, ${dnsIPv4[0]}, ${dnsIPv4[1]}
+  MTU = 1400
+  
+  [Peer]
+  PublicKey = ${serverKeyPair.publicKey}
+  Endpoint = ${endpointAddress}
+  AllowedIPs = 0.0.0.0/8, ::/8
+  PersistentKeepalive = 20`;
     } else {
-        // حالت IPv6:
+        // حالت IPv6
         let ipv4Location = document.getElementById("location").value || "germany";
         const locationData = locations[ipv4Location];
         const availableIPs = locationData.ipv4_ranges.filter(range => !range.includes("/10"));
@@ -304,37 +309,58 @@ PersistentKeepalive = 20`;
         const ip2 = randomIPv4FromCIDR(availableIPs[randomIndex2]);
 
         const dnsIPv4 = generateIPv4DNSAddresses(locationData);
-
         const clientKeyPair = generateKeyPair();
         const serverKeyPair = generateKeyPair();
 
         // انتخاب یک پیشوند IPv6 از رنج‌های تعریف‌شده
         const chosenPrefix = wgIPv6Ranges[Math.floor(Math.random() * wgIPv6Ranges.length)];
 
-        // تولید آدرس‌های IPv6 در محدوده CIDR انتخاب‌شده
+        // تولید آدرس‌های IPv6
         const endpointIPv6 = randomIPv6FromCIDR(chosenPrefix);
         const wgIPv6Interface = randomIPv6FromCIDR(chosenPrefix);
         const wgIPv6DNS = randomIPv6FromCIDR(chosenPrefix);
 
-        // استفاده از براکت برای آدرس IPv6 در endpoint
         const finalEndpoint = `[${endpointIPv6}]:443`;
 
         return `[Interface]
-PrivateKey = ${clientKeyPair.privateKey}
-Address = 10.202.10.10/32, ${ip1}/16, ${ip2}/32, ${wgIPv6Interface}/128
-ListenPort = 51820
-DNS = 78.157.42.100, ${dnsIPv4[0]}, ${dnsIPv4[1]}, ${wgIPv6DNS}
-MTU = 1400
-
-[Peer]
-PublicKey = ${serverKeyPair.publicKey}
-Endpoint = ${finalEndpoint}
-AllowedIPs = 0.0.0.0/8, ::/8
-PersistentKeepalive = 20`;
+  PrivateKey = ${clientKeyPair.privateKey}
+  Address = 10.202.10.10/32, ${ip1}/16, ${ip2}/32, ${wgIPv6Interface}/128
+  ListenPort = 51820
+  DNS = 78.157.42.100, ${dnsIPv4[0]}, ${dnsIPv4[1]}, ${wgIPv6DNS}
+  MTU = 1400
+  
+  [Peer]
+  PublicKey = ${serverKeyPair.publicKey}
+  Endpoint = ${finalEndpoint}
+  AllowedIPs = 0.0.0.0/8, ::/8
+  PersistentKeepalive = 20`;
     }
 }
 
-/* مدیریت تغییر تب‌ها با انیمیشن */
+/* ---------- به‌روزرسانی پیکربندی WireGuard ---------- */
+function updateWgConfig() {
+    const ipVersion = document.querySelector('input[name="ipVersion"]:checked').value;
+    const configName = document.getElementById("configName").value;
+    let wgConfig = "";
+
+    if (ipVersion === "ipv4") {
+        const location = document.getElementById("location").value;
+        if (!location) {
+            document.getElementById("wgConfigContainer").classList.remove("visible");
+            return;
+        }
+        wgConfig = generateWgConfig(location, configName);
+    } else {
+        wgConfig = generateWgConfig(null, configName);
+    }
+
+    document.getElementById("wgConfigOutput").textContent = wgConfig;
+    document.getElementById("wgConfigContainer").classList.add("visible");
+}
+
+/* ---------- رویدادها و مدیریت تب‌ها ---------- */
+
+// تغییر تب‌ها
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -349,7 +375,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
 });
 
-/* نمایش/پنهان کردن تنظیمات IPv6 */
+// نمایش/پنهان کردن تنظیمات IPv6
 document.querySelectorAll('input[name="ipVersion"]').forEach(radio => {
     radio.addEventListener("change", () => {
         const ipv6ModeContainer = document.getElementById("ipv6ModeContainer");
@@ -358,82 +384,26 @@ document.querySelectorAll('input[name="ipVersion"]').forEach(radio => {
         } else {
             ipv6ModeContainer.style.display = "none";
         }
+        updateWgConfig();
     });
 });
 
-/* رویدادهای بخش WireGuard */
-document.getElementById("location").addEventListener("change", () => {
-    const ipVersion = document.querySelector('input[name="ipVersion"]:checked').value;
-    if (ipVersion === "ipv4") {
-        const location = document.getElementById("location").value;
-        if (location) {
-            const configName = document.getElementById("configName").value;
-            const wgConfig = generateWgConfig(location, configName);
-            document.getElementById("wgConfigOutput").textContent = wgConfig;
-            document.getElementById("wgConfigContainer").classList.add("visible");
-        } else {
-            document.getElementById("wgConfigContainer").classList.remove("visible");
-        }
-    }
-});
+/* ---------- رویدادهای بخش WireGuard ---------- */
 
-document.getElementById("configName").addEventListener("input", () => {
-    const ipVersion = document.querySelector('input[name="ipVersion"]:checked').value;
-    const location = document.getElementById("location").value;
-    const configName = document.getElementById("configName").value;
-    if (ipVersion === "ipv4" && location) {
-        const wgConfig = generateWgConfig(location, configName);
-        document.getElementById("wgConfigOutput").textContent = wgConfig;
-    } else if (ipVersion === "ipv6") {
-        const wgConfig = generateWgConfig(null, configName);
-        document.getElementById("wgConfigOutput").textContent = wgConfig;
-    }
-});
+document.getElementById("location").addEventListener("change", updateWgConfig);
+document.getElementById("configName").addEventListener("input", updateWgConfig);
 
 document.getElementById("generateNameBtn").addEventListener("click", () => {
     const randomName = generateRandomWGName();
     document.getElementById("configName").value = randomName;
-    const ipVersion = document.querySelector('input[name="ipVersion"]:checked').value;
-    const location = document.getElementById("location").value;
-    if (ipVersion === "ipv4" && location) {
-        const wgConfig = generateWgConfig(location, randomName);
-        document.getElementById("wgConfigOutput").textContent = wgConfig;
-    } else {
-        const wgConfig = generateWgConfig(null, randomName);
-        document.getElementById("wgConfigOutput").textContent = wgConfig;
-    }
+    updateWgConfig();
 });
-
-function generateRandomWGName() {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < 7; i++) {
-        result += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return `WG-${result}`;
-}
 
 document.getElementById("generateNewConfig").addEventListener("click", () => {
-    const ipVersion = document.querySelector('input[name="ipVersion"]:checked').value;
-    if (ipVersion === "ipv4") {
-        const location = document.getElementById("location").value;
-        if (!location) {
-            showWarning("wgWarning", "Please select a location!");
-            return;
-        }
-        const configName = document.getElementById("configName").value;
-        const wgConfig = generateWgConfig(location, configName);
-        document.getElementById("wgConfigOutput").textContent = wgConfig;
-        document.getElementById("wgConfigContainer").classList.add("visible");
-    } else {
-        const configName = document.getElementById("configName").value;
-        const wgConfig = generateWgConfig(null, configName);
-        document.getElementById("wgConfigOutput").textContent = wgConfig;
-        document.getElementById("wgConfigContainer").classList.add("visible");
-    }
+    updateWgConfig();
 });
 
-/* رویدادهای بخش DNS */
+/* ---------- رویدادهای بخش DNS ---------- */
 function updateDnsConfig() {
     const location = document.getElementById("dnsLocation").value;
     if (location) {
@@ -454,31 +424,43 @@ document.getElementById("generateNewDns").addEventListener("click", () => {
     updateDnsConfig();
 });
 
-/* رویدادهای کپی و دانلود */
+/* ---------- رویدادهای کپی و دانلود ---------- */
+
+// کپی پیکربندی WireGuard
 document.getElementById("copyWgBtn").addEventListener("click", async () => {
     const config = document.getElementById("wgConfigOutput").textContent;
-    await navigator.clipboard.writeText(config);
-    const btn = document.getElementById("copyWgBtn");
-    btn.textContent = "Copied!";
-    btn.classList.add("copied");
-    setTimeout(() => {
-        btn.innerHTML = `<span class="material-icons">content_copy</span>Copy`;
-        btn.classList.remove("copied");
-    }, 2000);
+    try {
+        await navigator.clipboard.writeText(config);
+        const btn = document.getElementById("copyWgBtn");
+        btn.textContent = "Copied!";
+        btn.classList.add("copied");
+        setTimeout(() => {
+            btn.innerHTML = `<span class="material-icons">content_copy</span>Copy`;
+            btn.classList.remove("copied");
+        }, 2000);
+    } catch (err) {
+        console.error("Copy failed", err);
+    }
 });
 
+// کپی پیکربندی DNS
 document.getElementById("copyDnsBtn").addEventListener("click", async () => {
     const config = document.getElementById("dnsConfigOutput").textContent;
-    await navigator.clipboard.writeText(config);
-    const btn = document.getElementById("copyDnsBtn");
-    btn.textContent = "Copied!";
-    btn.classList.add("copied");
-    setTimeout(() => {
-        btn.innerHTML = `<span class="material-icons">content_copy</span>Copy`;
-        btn.classList.remove("copied");
-    }, 2000);
+    try {
+        await navigator.clipboard.writeText(config);
+        const btn = document.getElementById("copyDnsBtn");
+        btn.textContent = "Copied!";
+        btn.classList.add("copied");
+        setTimeout(() => {
+            btn.innerHTML = `<span class="material-icons">content_copy</span>Copy`;
+            btn.classList.remove("copied");
+        }, 2000);
+    } catch (err) {
+        console.error("Copy failed", err);
+    }
 });
 
+// دانلود پیکربندی WireGuard
 document.getElementById("downloadWgBtn").addEventListener("click", () => {
     const location = document.getElementById("location").value;
     const configName = document.getElementById("configName").value || `wireguard-${location || "ipv6"}`;
@@ -486,13 +468,14 @@ document.getElementById("downloadWgBtn").addEventListener("click", () => {
     downloadFile(config, configName + ".conf");
 });
 
+// دانلود پیکربندی DNS
 document.getElementById("downloadDnsBtn").addEventListener("click", () => {
     const location = document.getElementById("dnsLocation").value;
     const config = document.getElementById("dnsConfigOutput").textContent;
     downloadFile(config, `dns-${location}.txt`);
 });
 
-/* تغییر تم */
+/* ---------- تغییر تم ---------- */
 const toggleBtn = document.getElementById("toggleTheme");
 toggleBtn.addEventListener("click", () => {
     document.body.classList.toggle("dark-theme");
@@ -503,3 +486,13 @@ toggleBtn.addEventListener("click", () => {
         icon.textContent = "dark_mode";
     }
 });
+
+/* ---------- تولید نام تصادفی برای WireGuard ---------- */
+function generateRandomWGName() {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 7; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return `WG-${result}`;
+}
